@@ -1,7 +1,14 @@
+#[Desktop Entry]
+#Name=atculogger
+#Type=Appl ication
+#Exec=bash -i /home/Sharukh/Desktop/AEP.sh
+#Icon=utilities-terminal
+#Terminal=true
+#Categories=Application;
+
+
 [Desktop Entry]
-Name=atculogger
+Name=atcuLogger
+Exec=/usr/bin/python3 /home/Sharukh/CIAP/Logger.py
 Type=Application
-Exec=bash -i /home/Sharukh/Desktop/AEP.sh
-Icon=utilities-terminal
-Terminal=true
-Categories=Application;
+Terminal=false
