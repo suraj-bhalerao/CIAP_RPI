@@ -108,12 +108,7 @@ class SerialUtility:
     def create_widgets(self):
         self.log_console = scrolledtext.ScrolledText(self.root, wrap=tk.NONE, bg="black", fg="white", font=("Consolas", 10))
         self.log_console.pack(expand=True, fill=tk.BOTH)
-
-        # Simran : 04.07.24 -- Colour coded changes
-        # Suraj : 10.07.24 -- Colour coded changes
-        # Define color tags for specific log flags
         self.log_console.tag_configure('ais', foreground='#0039a6')
-        # self.log_console.tag_configure('gps', foreground='green')
         self.log_console.tag_configure('cvp', foreground='blue')      # CVP = Blue
         self.log_console.tag_configure('can', foreground='magenta')   # CAN = Magenta
         self.log_console.tag_configure('net', foreground='green')     # NET = Green
@@ -209,36 +204,30 @@ class SerialUtility:
                 break
     
     def reset_scroll(self, event=None):
-        # Resets user_scrolled_up flag and scrolls to the bottom when called
         self.user_scrolled_up = False
         self.log_console.yview(tk.END)
 
     def insert_ansi_colored_text(self, text):
         if not self.user_scrolled_up:
             self.log_console.insert(tk.END, text + '\n')
-            self.log_console.yview(tk.END)  # Automatically scroll down when inserting new text
+            self.log_console.yview(tk.END)  
         else:
-            self.log_console.insert(tk.END, text + '\n')  # Insert without auto-scrolling
+            self.log_console.insert(tk.END, text + '\n')  
 
     def on_mouse_wheel(self, event):
-        # Mouse wheel scroll handler
-        if event.delta > 0:  # User is scrolling up
+        if event.delta > 0: 
             self.user_scrolled_up = True
-        elif event.delta < 0:  # User is scrolling down
-            # Only scroll to the bottom if user_scrolled_up is False
+        elif event.delta < 0: 
             if self.user_scrolled_up and self.is_at_bottom():
                 self.reset_scroll()
 
     def is_at_bottom(self):
-        # Check if the scroll is at the bottom
         return self.log_console.yview()[1] == 1.0
 
     def on_space_key_press(self, event):
-        # Scroll the log console to the bottom and reset user_scrolled_up flag
         self.reset_scroll()
-        return "break"  # Prevent default space insertion behavior in Text widget
+        return "break" 
 
-    # Simran : 04.07.24 -- insert ansi text changes
     def insert_ansi_colored_text(self, text):
         ansi_escape = re.compile(r'\033\[(\d+)(;\d+)*m')
 
@@ -313,7 +302,6 @@ class SerialUtility:
     def port_settings(self):                                                                                                                       
         messagebox.showinfo("Port Settings", "Port settings would go here.")
 
-    # Suraj : 04.07.24 -- Macro function started changes
     def macros(self):
         macro_file_path = filedialog.askopenfilename(
             title="Select Macro File",
@@ -335,7 +323,6 @@ class SerialUtility:
         except Exception as e:
             messagebox.showerror("File Error", f"An error occurred while reading the file: {e}")
 
-    # Macro heleper function.
     def execute_macros(self):
         while self.current_command_index < len(self.commands):
             current_line = self.commands[self.current_command_index]
@@ -617,7 +604,6 @@ class SerialUtility:
         except tk.TclError:
             messagebox.showwarning("Copy", "No text selected to copy.")
     
-    # Suraj : 04.07.24 -- Paste and fire serial commands from console
     def paste(self):
         try:
             clipboard_text = self.root.clipboard_get()  
@@ -639,7 +625,6 @@ class SerialUtility:
         except Exception as e:
             self.insert_log(f"Error during paste operation: {e}")
 
-    # Paste Functionality helper function.
     def wait_for_device_response(self):
         """ Waits for a response from the device after sending a command. """
         if self.serial_port and self.serial_port.is_open:
