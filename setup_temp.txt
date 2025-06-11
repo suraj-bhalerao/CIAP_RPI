@@ -59,7 +59,7 @@ After=network.target
 ExecStart=/usr/bin/python3 $PYTHON_SCRIPT
 WorkingDirectory=$HOME_DIR
 Restart=always
-User=${USER_NAME}v
+User=${USER_NAME}
 
 [Install]
 WantedBy=multi-user.target
