@@ -91,7 +91,7 @@ def main():
 def main_loop():
     while True:
         main()
-        time.sleep(30)  # Wait 30 seconds between checks
+        time.sleep(30)  
 
 if __name__ == "__main__":
     main_loop()
