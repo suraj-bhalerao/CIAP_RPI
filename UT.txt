@@ -1,0 +1,129 @@
+import subprocess
+import tkinter as tk
+from tkinter import filedialog, messagebox, scrolledtext
+import threading
+
+# Global flag to control stopping the sending process
+sending_flag = False
+sending_thread = None
+
+def parse_can_message(line):
+    """Parse each line to extract CAN message ID and data."""
+    parts = line.split(';')
+    message_info = parts[0].strip()
+    description = parts[1].strip() if len(parts) > 1 else None
+    message_parts = message_info.split()
+    can_id = message_parts[0].replace('h', '')  # Remove 'h' from the message ID
+    data = ''.join([item.replace('h', '') for item in message_parts[4:]])  # Data starts after the 4th element
+    return can_id, data, description
+
+def send_can_message(can_id, data, log_box):
+    """Send CAN message using the 'cansend' command and log the result."""
+    try:
+        # Construct the cansend command: cansend can0 CAN_ID#DATA
+        command = f"cansend can0 {can_id}#{data}"
+        log_box.insert(tk.END, f"Running command: {command}\n")
+        log_box.yview(tk.END)  # Auto scroll to the end
+        
+        # Run the command and capture both stdout and stderr
+        result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        
+        # Log the success and output from cansend
+        log_box.insert(tk.END, f"Sent message: {can_id}#{data}\n")
+        log_box.insert(tk.END, f"Command output: {result.stdout.decode()}\n")
+        log_box.yview(tk.END)  # Auto scroll to the end
+        
+    except subprocess.CalledProcessError as e:
+        log_box.insert(tk.END, f"Error sending message: {can_id}#{data} - {e}\n")
+        log_box.insert(tk.END, f"Error output: {e.stderr.decode()}\n")
+        log_box.yview(tk.END)  # Auto scroll to the end
+    except Exception as e:
+        log_box.insert(tk.END, f"Unexpected error: {e}\n")
+        log_box.yview(tk.END)  # Auto scroll to the end
+
+def import_and_send_can_messages(file_path, log_box):
+    """Import CAN messages from the file and send them one by one."""
+    global sending_flag
+    try:
+        with open(file_path, 'r') as file:
+            for line in file:
+                if sending_flag == False:
+                    break  # Stop sending if the flag is set to False
+                if line.strip():  # Ignore empty lines
+                    can_id, data, description = parse_can_message(line)
+                    send_can_message(can_id, data, log_box)  # Send the CAN message
+                    log_box.insert(tk.END, f"Logged: CAN ID: {can_id} | Data: {data} | Description: {description}\n")
+                    log_box.yview(tk.END)  # Auto scroll to the end
+    except FileNotFoundError:
+        messagebox.showerror("File Error", f"The file '{file_path}' was not found.")
+    except Exception as e:
+        messagebox.showerror("Error", f"An error occurred: {e}")
+
+def browse_file(log_box):
+    """Open file dialog to select a CAN message file."""
+    file_path = filedialog.askopenfilename(filetypes=[("Text Files", "*.txt")])
+    if file_path:
+        file_path_label.config(text=f"File: {file_path}")
+        # Automatically enable Start Sending button when file is selected
+        start_button.config(state=tk.NORMAL)
+
+def start_sending(file_path, log_box):
+    """Start sending CAN messages."""
+    global sending_flag, sending_thread
+    sending_flag = True
+    sending_thread = threading.Thread(target=import_and_send_can_messages, args=(file_path, log_box))
+    sending_thread.start()
+
+    # Disable Start button and enable Stop button while sending
+    start_button.config(state=tk.DISABLED)
+    stop_button.config(state=tk.NORMAL)
+
+def stop_sending():
+    """Stop sending CAN messages."""
+    global sending_flag
+    sending_flag = False
+    # Wait for the thread to stop before enabling the start button again
+    if sending_thread is not None:
+        sending_thread.join()
+
+    # Re-enable buttons
+    start_button.config(state=tk.NORMAL)
+    stop_button.config(state=tk.DISABLED)
+
+def create_ui():
+    """Create the UI using tkinter."""
+    root = tk.Tk()
+    root.title("CAN Message Sender")
+    root.geometry("600x400")
+    
+    # Create a frame for the file selection and message box
+    frame = tk.Frame(root)
+    frame.pack(padx=10, pady=10, fill="both", expand=True)
+    
+    # Browse file button and label
+    browse_button = tk.Button(frame, text="Browse CAN Message File", command=lambda: browse_file(log_box))
+    browse_button.pack(fill="x")
+    
+    global file_path_label
+    file_path_label = tk.Label(frame, text="No file selected")
+    file_path_label.pack(fill="x")
+    
+    # Create a ScrolledText widget for logging
+    global log_box
+    log_box = scrolledtext.ScrolledText(frame, wrap=tk.WORD, height=15)
+    log_box.pack(padx=5, pady=5, fill="both", expand=True)
+    
+    # Start button
+    global start_button
+    start_button = tk.Button(frame, text="Start Sending", state=tk.DISABLED, command=lambda: start_sending(file_path_label.cget("text").replace("File: ", ""), log_box))
+    start_button.pack(fill="x", pady=5)
+
+    # Stop button
+    global stop_button
+    stop_button = tk.Button(frame, text="Stop Sending", state=tk.DISABLED, command=stop_sending)
+    stop_button.pack(fill="x", pady=5)
+    
+    root.mainloop()
+
+if __name__ == "__main__":
+    create_ui()
